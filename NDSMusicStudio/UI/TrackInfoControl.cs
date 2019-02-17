@@ -12,18 +12,18 @@ namespace Kermalis.NDSMusicStudio.UI
     class TrackInfo
     {
         public ushort Tempo;
-        public int[] Positions = new int[16];
-        public ushort[] Voices = new ushort[16];
-        public int[] Volumes = new int[16];
-        public byte[] Mods = new byte[16];
-        public int[] Delays = new int[16];
-        public sbyte[] Pans = new sbyte[16];
-        public float[] Lefts = new float[16],
-            Rights = new float[16];
-        public int[] Pitches = new int[16];
-        public int[] Portamentos = new int[16];
-        public string[] Types = new string[16];
-        public byte[][] Notes = new byte[16][];
+        public int[] Positions = new int[0x10];
+        public byte[] Voices = new byte[0x10];
+        public byte[] Volumes = new byte[0x10];
+        public int[] Mods = new int[0x10];
+        public int[] Delays = new int[0x10];
+        public sbyte[] Pans = new sbyte[0x10];
+        public float[] Lefts = new float[0x10],
+            Rights = new float[0x10];
+        public int[] Pitches = new int[0x10];
+        public byte[] Portamentos = new byte[0x10];
+        public string[] Types = new string[0x10];
+        public byte[][] Notes = new byte[0x10][];
 
         public TrackInfo()
         {
@@ -142,7 +142,7 @@ namespace Kermalis.NDSMusicStudio.UI
         {
             Info = new TrackInfo();
             previousNotes = new Tuple<int[], string[]>(new int[16], new string[16]);
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < 0x10; i++)
             {
                 previousNotes.Item2[i] = string.Empty;
             }

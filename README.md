@@ -4,7 +4,7 @@ A tool that lets you listen to and visualize the music in a SDAT file.
 
 ----
 # To Do:
-* LFO for volume and panpot
+* LFO for volume
 * Data viewers (track and SBNK)
 * Exporting to MIDI and SF2
 * Importing

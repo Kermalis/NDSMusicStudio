@@ -1,7 +1,6 @@
 using Kermalis.NDSMusicStudio.Core.FileSystem;
 using Kermalis.NDSMusicStudio.Util;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
@@ -73,8 +72,6 @@ namespace Kermalis.NDSMusicStudio.Core
             {
                 Tracks[i].Init();
                 soundVars[i].Value = -1;
-                SoundMixer.Instance.Channels[i].Enabled = false;
-                SoundMixer.Instance.Channels[i].Owner = null;
             }
 
             Track track0 = Tracks[0];
@@ -112,9 +109,7 @@ namespace Kermalis.NDSMusicStudio.Core
             State = PlayerState.Stopped;
             for (int i = 0; i < 0x10; i++)
             {
-                Track t = Tracks[i];
-                t.ReleaseAllChannels();
-                t.RemoveAllChannels();
+                Tracks[i].CloseAllChannels();
             }
         }
         public void ShutDown()
@@ -133,12 +128,12 @@ namespace Kermalis.NDSMusicStudio.Core
                 info.Positions[i] = track.DataOffset;
                 info.Delays[i] = track.Delay;
                 info.Voices[i] = track.Voice;
-                info.Mods[i] = track.LFODepth;
+                info.Mods[i] = track.LFODepth * track.LFORange;
                 info.Types[i] = sbnk.NumInstruments <= track.Voice ? "???" : sbnk.Instruments[track.Voice].Type.ToString();
                 info.Volumes[i] = track.Volume;
                 info.Pitches[i] = track.GetPitch();
-                info.Portamentos[i] = track.Portamento ? track.PortamentoTime : 0;
-                info.Pans[i] = track.Pan;
+                info.Portamentos[i] = track.Portamento ? track.PortamentoTime : (byte)0;
+                info.Pans[i] = track.GetPan();
 
                 Channel[] channels = track.Channels.ToArray(); // Copy so adding and removing from the other thread doesn't interrupt (plus Array looping is faster than List looping)
                 if (channels.Length == 0)
@@ -257,6 +252,7 @@ namespace Kermalis.NDSMusicStudio.Core
                                     break;
                                 }
                         }
+                        channel.Close();
                         if (started)
                         {
                             channel.Key = key;
@@ -267,11 +263,11 @@ namespace Kermalis.NDSMusicStudio.Core
                             channel.SetSustain(inst.Param.Sustain);
                             channel.SetRelease(release);
                             channel.StartingPan = (sbyte)(inst.Param.Pan - 0x40);
+                            channel.Owner = track;
                             track.Channels.Add(channel);
                         }
                         else
                         {
-                            channel.Owner = null;
                             return;
                         }
                     }
@@ -349,7 +345,7 @@ namespace Kermalis.NDSMusicStudio.Core
                 if (doCmdWork)
                 {
                     byte key = (byte)(cmd + track.KeyShift).Clamp(0x0, 0x7F);
-                    PlayNote(track, key, velocity, (length <= 0) ? -1 : length);
+                    PlayNote(track, key, velocity, Math.Max(-1, length));
                     track.PortamentoKey = key;
                     if (track.ShouldWaitForNotesToFinish)
                     {
@@ -557,14 +553,13 @@ namespace Kermalis.NDSMusicStudio.Core
                                 }
                             case 0xC7: // Mono/Poly
                                 {
-                                    track.ShouldWaitForNotesToFinish = (cmdArg & 1) == 1;
+                                    track.ShouldWaitForNotesToFinish = cmdArg == 1;
                                     break;
                                 }
                             case 0xC8: // Tie
                                 {
-                                    track.Tie = (cmdArg & 1) == 1;
-                                    track.ReleaseAllChannels();
-                                    track.RemoveAllChannels();
+                                    track.Tie = cmdArg == 1;
+                                    track.CloseAllChannels();
                                     break;
                                 }
                             case 0xC9: // Portamento Control
@@ -595,7 +590,7 @@ namespace Kermalis.NDSMusicStudio.Core
                                 }
                             case 0xCE: // Portamento Toggle
                                 {
-                                    track.Portamento = (cmdArg & 1) == 1;
+                                    track.Portamento = cmdArg == 1;
                                     break;
                                 }
                             case 0xCF: // Portamento Time
@@ -738,6 +733,7 @@ namespace Kermalis.NDSMusicStudio.Core
                                 {
                                     ExecuteNext(track);
                                 }
+                                track.UpdateChannels();
                                 if (!track.Stopped || track.Channels.Count != 0)
                                 {
                                     allDone = false;
@@ -751,14 +747,6 @@ namespace Kermalis.NDSMusicStudio.Core
                         }
                     }
 
-                    for (int i = 0; i < 0x10; i++)
-                    {
-                        Track track = Tracks[i];
-                        if (track.Enabled)
-                        {
-                            track.UpdateChannels();
-                        }
-                    }
                     SoundMixer.Instance.ChannelTick();
                     SoundMixer.Instance.Process();
                 }

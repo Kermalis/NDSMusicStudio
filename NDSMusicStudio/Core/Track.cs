@@ -30,7 +30,14 @@ namespace Kermalis.NDSMusicStudio.Core
         {
             int mod = LFOType == LFOType.Pitch ? (LFORange * Utils.Sin(LFOPhase >> 8) * LFODepth) : 0;
             mod = ((mod << 6) >> 14) | ((mod >> 26) << 18);
-            return Bend * BendRange / 2 + mod;
+            return (Bend * BendRange / 2) + mod;
+        }
+        // GetVolume()
+        public sbyte GetPan()
+        {
+            int mod = LFOType == LFOType.Panpot ? (LFORange * Utils.Sin(LFOPhase >> 8) * LFODepth) : 0;
+            mod = ((mod << 6) >> 14) | ((mod >> 26) << 18);
+            return (sbyte)Utils.Clamp(Pan + mod, -0x40, 0x3F);
         }
 
         public Track(byte i)
@@ -57,7 +64,7 @@ namespace Kermalis.NDSMusicStudio.Core
             SweepPitch = 0;
             LFOType = LFOType.Pitch;
             Delay = 0;
-            RemoveAllChannels();
+            CloseAllChannels();
         }
         public void Tick()
         {
@@ -106,21 +113,12 @@ namespace Kermalis.NDSMusicStudio.Core
             }
         }
 
-        public void ReleaseAllChannels()
-        {
-            UpdateChannels();
-            for (int i = 0; i < Channels.Count; i++)
-            {
-                Channels[i].State = EnvelopeState.Release;
-            }
-        }
-        public void RemoveAllChannels()
+        public void CloseAllChannels()
         {
             for (int i = 0; i < Channels.Count; i++)
             {
-                Channels[i].Owner = null;
+                Channels[i].Close();
             }
-            Channels.Clear();
         }
         public void UpdateChannels()
         {
@@ -131,7 +129,6 @@ namespace Kermalis.NDSMusicStudio.Core
                 if (c.State != EnvelopeState.Release)
                 {
                     c.TrackVolume = vol;
-                    c.TrackPan = Pan;
                     if (c.NoteLength == 0)
                     {
                         c.State = EnvelopeState.Release;

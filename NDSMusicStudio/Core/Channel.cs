@@ -8,17 +8,15 @@ namespace Kermalis.NDSMusicStudio.Core
     {
         public readonly byte Index;
 
-        public bool Enabled;
         public Track Owner;
         public InstrumentType Type;
         public EnvelopeState State;
         public bool AutoSweep;
         public byte BaseKey, Key, NoteVelocity;
-        public sbyte StartingPan, TrackPan;
+        public sbyte StartingPan, Pan;
         public int SweepCounter, SweepLength;
         public short SweepPitch;
         public int TrackVolume, Velocity; // The SEQ Player treats 0 as the 100% amplitude value and -92544 (-723*128) as the 0% amplitude value. The starting ampltitude is 0% (-92544).
-        public sbyte Pan;
         public byte Volume; // From 0x00-0x7F (Calculated from Utils)
         public ushort BaseTimer, Timer;
         public int NoteLength;
@@ -44,7 +42,7 @@ namespace Kermalis.NDSMusicStudio.Core
         int psgCounter;
         // Noise
         ushort noiseCounter;
-        
+
         public Channel(byte i)
         {
             Index = i;
@@ -84,7 +82,15 @@ namespace Kermalis.NDSMusicStudio.Core
             pos = 0;
             prevLeft = prevRight = 0;
             NoteLength = noteLength;
-            Enabled = true;
+        }
+
+        public void Close()
+        {
+            if (Owner != null)
+            {
+                Owner.Channels.Remove(this);
+            }
+            Owner = null;
         }
 
         public int SweepMain()
@@ -197,7 +203,7 @@ namespace Kermalis.NDSMusicStudio.Core
                                         else
                                         {
                                             left = right = 0;
-                                            Enabled = false;
+                                            Close();
                                             return;
                                         }
                                     }
@@ -216,7 +222,7 @@ namespace Kermalis.NDSMusicStudio.Core
                                         else
                                         {
                                             left = right = 0;
-                                            Enabled = false;
+                                            Close();
                                             return;
                                         }
                                     }
@@ -244,7 +250,7 @@ namespace Kermalis.NDSMusicStudio.Core
                                         else
                                         {
                                             left = right = 0;
-                                            Enabled = false;
+                                            Close();
                                             return;
                                         }
                                     }

@@ -86,14 +86,6 @@ namespace Kermalis.NDSMusicStudio.Core
                     nChn = lowest;
                 }
             }
-            if (nChn != null)
-            {
-                if (nChn.Owner != null)
-                {
-                    nChn.Owner.Channels.Remove(nChn);
-                }
-                nChn.Owner = track;
-            }
             return nChn;
         }
 
@@ -104,29 +96,18 @@ namespace Kermalis.NDSMusicStudio.Core
                 Channel chan = Channels[i];
                 if (chan.Owner != null)
                 {
-                    // If channel stopped, clean it up
-                    if (!chan.Enabled)
-                    {
-                        chan.Owner.Channels.Remove(chan);
-                        chan.Owner = null;
-                        chan.Volume = 0;
-                        continue;
-                    }
-                    int pan = chan.StartingPan; // TODO: Mod
                     chan.StepEnvelope();
                     int chanVolume = Utils.SustainTable[chan.NoteVelocity] + chan.Velocity + chan.TrackVolume; // TODO: Mod
                     int pitch = ((chan.Key - chan.BaseKey) << 6) + chan.SweepMain() + chan.Owner.GetPitch(); // "<< 6" is "* 0x40"
                     if (chan.State != EnvelopeState.Release || chanVolume > -92544)
                     {
                         chan.Volume = Utils.GetChannelVolume(chanVolume);
+                        chan.Pan = (sbyte)Utils.Clamp(chan.StartingPan + chan.Owner.GetPan(), -0x40, 0x3F);
                         chan.Timer = Utils.GetChannelTimer(chan.BaseTimer, pitch);
-                        chan.Pan = (sbyte)Utils.Clamp(pan + chan.TrackPan, -0x40, 0x40);
                     }
                     else // EnvelopeState.Dying
                     {
-                        chan.Owner.Channels.Remove(chan);
-                        chan.Owner = null;
-                        chan.Volume = 0;
+                        chan.Close();
                     }
                 }
             }
@@ -141,10 +122,11 @@ namespace Kermalis.NDSMusicStudio.Core
                 for (int j = 0; j < 0x10; j++)
                 {
                     Channel chan = Channels[j];
-                    if (chan != null && chan.Enabled)
+                    if (chan.Owner != null)
                     {
+                        bool muted = Mutes[chan.Owner.Index];
                         chan.Process(out short channelLeft, out short channelRight);
-                        if (chan.Owner != null && !Mutes[chan.Owner.Index])
+                        if (!muted)
                         {
                             left += channelLeft;
                             right += channelRight;
