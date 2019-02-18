@@ -57,7 +57,7 @@ namespace Kermalis.NDSMusicStudio.UI
 
             // Main Menu
             openSDATToolStripMenuItem = new ToolStripMenuItem { Text = "Open SDAT", ShortcutKeys = Keys.Control | Keys.O };
-            openSDATToolStripMenuItem.Click += OpenROM;
+            openSDATToolStripMenuItem.Click += OpenSDAT;
 
             configToolStripMenuItem = new ToolStripMenuItem { Text = "Refresh Config", ShortcutKeys = Keys.Control | Keys.R };
             configToolStripMenuItem.Click += ReloadConfig;
@@ -231,7 +231,7 @@ namespace Kermalis.NDSMusicStudio.UI
             stopUI = true;
         }
 
-        void OpenROM(object sender, EventArgs e)
+        void OpenSDAT(object sender, EventArgs e)
         {
             var d = new OpenFileDialog { Title = "Open SDAT", Filter = "SDAT Files|*.sdat" };
             if (d.ShowDialog() != DialogResult.OK)
@@ -249,6 +249,7 @@ namespace Kermalis.NDSMusicStudio.UI
 
                 songsComboBox.SelectedIndex = 0;
                 SongsComboBox_SelectedIndexChanged(null, null); // Why doesn't it work on its own??
+                LoadSong();
                 songNumerical.Maximum = sdat.INFOBlock.SequenceInfos.NumEntries;
                 songsComboBox.Enabled = songNumerical.Enabled = playButton.Enabled = true;
             }
