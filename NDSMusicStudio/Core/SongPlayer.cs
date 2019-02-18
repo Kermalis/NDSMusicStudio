@@ -24,7 +24,14 @@ namespace Kermalis.NDSMusicStudio.Core
         ushort tempo;
         int tempoStack;
 
-        readonly SoundVar[] soundVars = new SoundVar[0x10];
+        // Mario Kart DS song 0 sets variables 0 and 1 for unknown reasons (controlling the demo is a likely cause, as the timing goes with the demo states)
+        // Mario Kart DS song 75 sets variable 0 to random values to play a random intro
+        // New Super Mario Bros "BGM_SAMPLE" uses variable 0 for unknown reasons
+        // New Super Mario Bros (multiple songs) use variable 2 to cause enemies to jump/wave
+        // New Super Mario Bros "BGM_AMB_SABAKU" uses variables 4 and 5 to change panpot
+        // New Super Mario Bros "BGM_AMB_SKY" uses variable 5 to change panpot
+        // Spirit Tracks song 18 uses variable 1 to help variable 19 check what segment the song should play next
+        readonly SoundVar[] soundVars = new SoundVar[0x20]; // Unsure of the exact amount
         public readonly Track[] Tracks = new Track[0x10];
 
         public PlayerState State { get; private set; }
@@ -39,8 +46,11 @@ namespace Kermalis.NDSMusicStudio.Core
 
             for (byte i = 0; i < 0x10; i++)
             {
-                soundVars[i] = new SoundVar();
                 Tracks[i] = new Track(i);
+            }
+            for (int i = 0; i < soundVars.Length; i++)
+            {
+                soundVars[i] = new SoundVar();
             }
         }
 
@@ -71,7 +81,10 @@ namespace Kermalis.NDSMusicStudio.Core
             for (int i = 0; i < 0x10; i++)
             {
                 Tracks[i].Init();
-                soundVars[i].Value = -1;
+            }
+            for (int i = 0; i < soundVars.Length; i++)
+            {
+                soundVars[i].Value = short.MinValue; // Not sure what the initial value is, but it is not [0,15]
             }
 
             Track track0 = Tracks[0];
@@ -95,10 +108,12 @@ namespace Kermalis.NDSMusicStudio.Core
             }
 
             State = PlayerState.Playing;
+            Console.WriteLine(State);
         }
         public void Pause()
         {
             State = State == PlayerState.Paused ? PlayerState.Playing : PlayerState.Paused;
+            Console.WriteLine(State);
         }
         public void Stop()
         {
@@ -111,11 +126,13 @@ namespace Kermalis.NDSMusicStudio.Core
             {
                 Tracks[i].CloseAllChannels();
             }
+            Console.WriteLine(State);
         }
         public void ShutDown()
         {
             Stop();
             State = PlayerState.ShutDown;
+            Console.WriteLine(State);
             thread.Join();
         }
 
@@ -422,34 +439,45 @@ namespace Kermalis.NDSMusicStudio.Core
                         {
                             case 0xB0:
                                 {
+                                    Console.Write("Setvar {0} {1} (Old: {2}", varIndex, mathArg, var.Value);
                                     var.Value = mathArg;
+                                    Console.WriteLine(", New: {0})", var.Value);
                                     break;
                                 }
                             case 0xB1:
                                 {
+                                    Console.Write("Addvar {0} {1} (Old: {2}", varIndex, mathArg, var.Value);
                                     var.Value += mathArg;
+                                    Console.WriteLine(", New: {0})", var.Value);
                                     break;
                                 }
                             case 0xB2:
                                 {
+                                    Console.Write("Subvar {0} {1} (Old: {2}", varIndex, mathArg, var.Value);
                                     var.Value -= mathArg;
+                                    Console.WriteLine(", New: {0})", var.Value);
                                     break;
                                 }
                             case 0xB3:
                                 {
+                                    Console.Write("Mulvar {0} {1} (Old: {2}", varIndex, mathArg, var.Value);
                                     var.Value *= mathArg;
+                                    Console.WriteLine(", New: {0})", var.Value);
                                     break;
                                 }
                             case 0xB4:
                                 {
+                                    Console.Write("Divvar {0} {1} (Old: {2}", varIndex, mathArg, var.Value);
                                     if (mathArg != 0)
                                     {
                                         var.Value /= mathArg;
                                     }
+                                    Console.WriteLine(", New: {0})", var.Value);
                                     break;
                                 }
                             case 0xB5:
                                 {
+                                    Console.Write("Shiftvar {0} {1} (Old: {2}", varIndex, mathArg, var.Value);
                                     if (mathArg < 0)
                                     {
                                         var.Value = (short)(var.Value >> -mathArg);
@@ -458,10 +486,12 @@ namespace Kermalis.NDSMusicStudio.Core
                                     {
                                         var.Value = (short)(var.Value << mathArg);
                                     }
+                                    Console.WriteLine(", New: {0})", var.Value);
                                     break;
                                 }
                             case 0xB6: // [Mario Kart DS (75)]
                                 {
+                                    Console.Write("Randvar {0} {1} (Old: {2}", varIndex, mathArg, var.Value);
                                     bool negate = false;
                                     if (mathArg < 0)
                                     {
@@ -474,35 +504,42 @@ namespace Kermalis.NDSMusicStudio.Core
                                         val = (short)-val;
                                     }
                                     var.Value = val;
+                                    Console.WriteLine(", New: {0})", var.Value);
                                     break;
                                 }
                             case 0xB8:
                                 {
+                                    Console.WriteLine("CMPVar {0} == {1} (Value: {2})", varIndex, mathArg, var.Value);
                                     track.VariableFlag = var.Value == mathArg;
                                     break;
                                 }
                             case 0xB9:
                                 {
+                                    Console.WriteLine("CMPVar {0} >= {1} (Value: {2})", varIndex, mathArg, var.Value);
                                     track.VariableFlag = var.Value >= mathArg;
                                     break;
                                 }
                             case 0xBA:
                                 {
+                                    Console.WriteLine("CMPVar {0} > {1} (Value: {2})", varIndex, mathArg, var.Value);
                                     track.VariableFlag = var.Value > mathArg;
                                     break;
                                 }
                             case 0xBB:
                                 {
+                                    Console.WriteLine("CMPVar {0} <= {1} (Value: {2})", varIndex, mathArg, var.Value);
                                     track.VariableFlag = var.Value <= mathArg;
                                     break;
                                 }
                             case 0xBC:
                                 {
+                                    Console.WriteLine("CMPVar {0} < {1} (Value: {2})", varIndex, mathArg, var.Value);
                                     track.VariableFlag = var.Value < mathArg;
                                     break;
                                 }
                             case 0xBD:
                                 {
+                                    Console.WriteLine("CMPVar {0} != {1} (Value: {2})", varIndex, mathArg, var.Value);
                                     track.VariableFlag = var.Value != mathArg;
                                     break;
                                 }
