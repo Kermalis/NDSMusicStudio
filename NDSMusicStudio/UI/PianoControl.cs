@@ -23,6 +23,7 @@
 
 #endregion
 
+using Kermalis.NDSMusicStudio.Util;
 using System;
 using System.Collections;
 using System.Drawing;
@@ -39,7 +40,7 @@ namespace Kermalis.NDSMusicStudio.UI
             public bool Pressed { get; private set; } = false;
 
             SolidBrush onBrush = new SolidBrush(Color.SkyBlue);
-            SolidBrush offBrush = new SolidBrush(Color.White);
+            SolidBrush offBrush;
             public Color NoteOnColor
             {
                 get
@@ -88,10 +89,12 @@ namespace Kermalis.NDSMusicStudio.UI
                 }
             }
 
-            public PianoKey(PianoControl piano)
+            public PianoKey(PianoControl piano, int noteId)
             {
                 owner = piano;
                 TabStop = false;
+                NoteID = noteId;
+                offBrush = new SolidBrush(new HSLColor(160.0, 0.0, KeyTypeTable[noteID % 12] == KeyType.White ? noteID / 12 % 2 == 0 ? 240.0 : 120.0 : 0.0));
             }
 
             public void PressPianoKey()
@@ -316,7 +319,7 @@ namespace Kermalis.NDSMusicStudio.UI
 
             for (int i = 0; i < keys.Length; i++)
             {
-                keys[i] = new PianoKey(this) { NoteID = i + LowNoteID };
+                keys[i] = new PianoKey(this, i + LowNoteID);
 
                 if (KeyTypeTable[keys[i].NoteID % 12] == KeyType.White)
                 {
@@ -324,7 +327,6 @@ namespace Kermalis.NDSMusicStudio.UI
                 }
                 else
                 {
-                    keys[i].NoteOffColor = Color.Black;
                     keys[i].BringToFront();
                 }
 
