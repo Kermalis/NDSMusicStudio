@@ -30,6 +30,7 @@ namespace Kermalis.NDSMusicStudio.Core
         // New Super Mario Bros (multiple songs) use variable 2 to cause enemies to jump/wave
         // New Super Mario Bros "BGM_AMB_SABAKU" uses variables 4 and 5 to change panpot
         // New Super Mario Bros "BGM_AMB_SKY" uses variable 5 to change panpot
+        // Pokémon HGSS (some johto battle songs) use variable 0 for unknown reasons
         // Spirit Tracks song 18 uses variable 1 to help variable 19 check what segment the song should play next
         readonly SoundVar[] soundVars = new SoundVar[0x20]; // Unsure of the exact amount
         public readonly Track[] Tracks = new Track[0x10];
@@ -108,12 +109,12 @@ namespace Kermalis.NDSMusicStudio.Core
             }
 
             State = PlayerState.Playing;
-            Console.WriteLine(State);
+            Console.WriteLine("{0} {1}", State, DateTime.Now);
         }
         public void Pause()
         {
             State = State == PlayerState.Paused ? PlayerState.Playing : PlayerState.Paused;
-            Console.WriteLine(State);
+            Console.WriteLine("{0} {1}", State, DateTime.Now);
         }
         public void Stop()
         {
@@ -126,13 +127,12 @@ namespace Kermalis.NDSMusicStudio.Core
             {
                 Tracks[i].CloseAllChannels();
             }
-            Console.WriteLine(State);
+            Console.WriteLine("{0} {1}", State, DateTime.Now);
         }
         public void ShutDown()
         {
             Stop();
             State = PlayerState.ShutDown;
-            Console.WriteLine(State);
             thread.Join();
         }
 

@@ -129,7 +129,7 @@ namespace Kermalis.NDSMusicStudio.Core
                 if (c.State != EnvelopeState.Release)
                 {
                     c.TrackVolume = vol;
-                    if (c.NoteLength == 0)
+                    if (c.NoteLength == 0 && !WaitingForNoteToFinishBeforeContinuingXD)
                     {
                         c.State = EnvelopeState.Release;
                     }
