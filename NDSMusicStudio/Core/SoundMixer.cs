@@ -97,17 +97,21 @@ namespace Kermalis.NDSMusicStudio.Core
                 if (chan.Owner != null)
                 {
                     chan.StepEnvelope();
-                    int chanVolume = Utils.SustainTable[chan.NoteVelocity] + chan.Velocity + chan.TrackVolume; // TODO: Mod
-                    int pitch = ((chan.Key - chan.BaseKey) << 6) + chan.SweepMain() + chan.Owner.GetPitch(); // "<< 6" is "* 0x40"
-                    if (chan.State != EnvelopeState.Release || chanVolume > -92544)
+                    if (chan.NoteLength == 0 && !chan.Owner.WaitingForNoteToFinishBeforeContinuingXD)
                     {
-                        chan.Volume = Utils.GetChannelVolume(chanVolume);
+                        chan.State = EnvelopeState.Release;
+                    }
+                    int vol = Utils.SustainTable[chan.NoteVelocity] + chan.Velocity + chan.Owner.GetVolume();
+                    int pitch = ((chan.Key - chan.BaseKey) << 6) + chan.SweepMain() + chan.Owner.GetPitch(); // "<< 6" is "* 0x40"
+                    if (chan.State != EnvelopeState.Release || vol > -92544)
+                    {
+                        chan.Volume = Utils.GetChannelVolume(vol);
                         chan.Pan = (sbyte)Utils.Clamp(chan.StartingPan + chan.Owner.GetPan(), -0x40, 0x3F);
                         chan.Timer = Utils.GetChannelTimer(chan.BaseTimer, pitch);
                     }
                     else // EnvelopeState.Dying
                     {
-                        chan.Close();
+                        chan.Stop();
                     }
                 }
             }

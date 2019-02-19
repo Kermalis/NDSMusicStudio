@@ -32,7 +32,12 @@ namespace Kermalis.NDSMusicStudio.Core
             mod = ((mod << 6) >> 14) | ((mod >> 26) << 18);
             return (Bend * BendRange / 2) + mod;
         }
-        // GetVolume()
+        public int GetVolume()
+        {
+            int mod = LFOType == LFOType.Volume ? (LFORange * Utils.Sin(LFOPhase >> 8) * LFODepth) : 0;
+            mod = (((mod << 6) >> 14) | ((mod >> 26) << 18)) << 6;
+            return Utils.SustainTable[SongPlayer.Instance.Volume] + Utils.SustainTable[Volume] + Utils.SustainTable[Expression] + mod;
+        }
         public sbyte GetPan()
         {
             int mod = LFOType == LFOType.Panpot ? (LFORange * Utils.Sin(LFOPhase >> 8) * LFODepth) : 0;
@@ -117,23 +122,7 @@ namespace Kermalis.NDSMusicStudio.Core
         {
             for (int i = 0; i < Channels.Count; i++)
             {
-                Channels[i].Close();
-            }
-        }
-        public void UpdateChannels()
-        {
-            int vol = Utils.SustainTable[SongPlayer.Instance.Volume] + Utils.SustainTable[Volume] + Utils.SustainTable[Expression];
-            for (int i = 0; i < Channels.Count; i++)
-            {
-                Channel c = Channels[i];
-                if (c.State != EnvelopeState.Release)
-                {
-                    c.TrackVolume = vol;
-                    if (c.NoteLength == 0 && !WaitingForNoteToFinishBeforeContinuingXD)
-                    {
-                        c.State = EnvelopeState.Release;
-                    }
-                }
+                Channels[i].Stop();
             }
         }
     }

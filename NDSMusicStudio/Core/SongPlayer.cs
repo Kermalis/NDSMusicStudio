@@ -269,7 +269,7 @@ namespace Kermalis.NDSMusicStudio.Core
                                     break;
                                 }
                         }
-                        channel.Close();
+                        channel.Stop();
                         if (started)
                         {
                             channel.Key = key;
@@ -770,7 +770,6 @@ namespace Kermalis.NDSMusicStudio.Core
                                 {
                                     ExecuteNext(track);
                                 }
-                                track.UpdateChannels();
                                 if (!track.Stopped || track.Channels.Count != 0)
                                 {
                                     allDone = false;

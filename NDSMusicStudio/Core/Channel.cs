@@ -16,7 +16,7 @@ namespace Kermalis.NDSMusicStudio.Core
         public sbyte StartingPan, Pan;
         public int SweepCounter, SweepLength;
         public short SweepPitch;
-        public int TrackVolume, Velocity; // The SEQ Player treats 0 as the 100% amplitude value and -92544 (-723*128) as the 0% amplitude value. The starting ampltitude is 0% (-92544).
+        public int Velocity; // The SEQ Player treats 0 as the 100% amplitude value and -92544 (-723*128) as the 0% amplitude value. The starting ampltitude is 0% (-92544).
         public byte Volume; // From 0x00-0x7F (Calculated from Utils)
         public ushort BaseTimer, Timer;
         public int NoteLength;
@@ -84,7 +84,7 @@ namespace Kermalis.NDSMusicStudio.Core
             NoteLength = noteLength;
         }
 
-        public void Close()
+        public void Stop()
         {
             if (Owner != null)
             {
@@ -203,7 +203,7 @@ namespace Kermalis.NDSMusicStudio.Core
                                         else
                                         {
                                             left = right = 0;
-                                            Close();
+                                            Stop();
                                             return;
                                         }
                                     }
@@ -222,7 +222,7 @@ namespace Kermalis.NDSMusicStudio.Core
                                         else
                                         {
                                             left = right = 0;
-                                            Close();
+                                            Stop();
                                             return;
                                         }
                                     }
@@ -250,7 +250,7 @@ namespace Kermalis.NDSMusicStudio.Core
                                         else
                                         {
                                             left = right = 0;
-                                            Close();
+                                            Stop();
                                             return;
                                         }
                                     }
