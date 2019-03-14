@@ -250,7 +250,7 @@ namespace Kermalis.NDSMusicStudio.UI
                 songsComboBox.SelectedIndex = 0;
                 SongsComboBox_SelectedIndexChanged(null, null); // Why doesn't it work on its own??
                 LoadSong();
-                songNumerical.Maximum = sdat.INFOBlock.SequenceInfos.NumEntries;
+                songNumerical.Maximum = sdat.INFOBlock.SequenceInfos.NumEntries - 1;
                 songsComboBox.Enabled = songNumerical.Enabled = playButton.Enabled = true;
             }
             catch (Exception ex)
