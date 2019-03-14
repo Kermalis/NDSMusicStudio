@@ -14,7 +14,8 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
 
         public SSEQ(byte[] bytes)
         {
-            using (var er = new EndianBinaryReader(new MemoryStream(bytes)))
+            using (var s = new MemoryStream(bytes))
+            using (var er = new EndianBinaryReader(s))
             {
                 FileHeader = er.ReadObject<FileHeader>();
                 BlockType = er.ReadString(4);

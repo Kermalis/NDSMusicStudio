@@ -26,7 +26,7 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
                     {
                         if (EntryOffsets[i] != 0)
                         {
-                            Entries[i] = er.ReadString(baseOffset + EntryOffsets[i]);
+                            Entries[i] = er.ReadStringNullTerminated(baseOffset + EntryOffsets[i]);
                         }
                     }
                     er.BaseStream.Position = p;
@@ -206,7 +206,8 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
 
         public SDAT(byte[] bytes)
         {
-            using (var er = new EndianBinaryReader(new MemoryStream(bytes)))
+            using (var s = new MemoryStream(bytes))
+            using (var er = new EndianBinaryReader(s))
             {
                 FileHeader = er.ReadObject<FileHeader>();
                 SYMBOffset = er.ReadInt32();

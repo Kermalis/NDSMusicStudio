@@ -17,7 +17,7 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
         public void Read(EndianBinaryReader er)
         {
             Format = (SWAVFormat)er.ReadByte();
-            DoesLoop = er.ReadBoolean(BooleanSize.U8);
+            DoesLoop = er.ReadBoolean();
             SampleRate = er.ReadUInt16();
             Timer = er.ReadUInt16();
             LoopOffset = er.ReadUInt16();

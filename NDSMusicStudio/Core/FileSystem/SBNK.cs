@@ -44,11 +44,11 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
                     int numSubInstruments = 0;
                     for (int i = 0; i < 8; i++)
                     {
-                        numSubInstruments++;
                         if (KeyRegions[i] == 0)
                         {
                             break;
                         }
+                        numSubInstruments++;
                     }
                     SubInstruments = new InstrumentData[numSubInstruments];
                     for (int i = 0; i < numSubInstruments; i++)
@@ -77,9 +77,12 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
                 long p = er.BaseStream.Position;
                 switch (Type)
                 {
+                    case InstrumentType.PCM:
+                    case InstrumentType.PSG:
+                    case InstrumentType.Noise: Data = er.ReadObject<DefaultData>(DataOffset); break;
                     case InstrumentType.Drum: Data = er.ReadObject<DrumSetData>(DataOffset); break;
                     case InstrumentType.KeySplit: Data = er.ReadObject<KeySplitData>(DataOffset); break;
-                    default: Data = er.ReadObject<DefaultData>(DataOffset); break;
+                    default: break;
                 }
                 er.BaseStream.Position = p;
             }
@@ -90,28 +93,24 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
         }
 
         public FileHeader FileHeader; // "SBNK"
+        [BinaryStringFixedLength(4)]
         public string BlockType; // "DATA"
         public int BlockSize;
+        [BinaryArrayFixedLength(32)]
         public byte[] Padding;
         public int NumInstruments;
+        [BinaryArrayVariableLength(nameof(NumInstruments))]
         public Instrument[] Instruments;
 
+        [BinaryIgnore]
         public SWAR[] SWARs = new SWAR[4];
 
         public SBNK(byte[] bytes)
         {
-            using (var er = new EndianBinaryReader(new MemoryStream(bytes)))
+            using (var s = new MemoryStream(bytes))
+            using (var er = new EndianBinaryReader(s))
             {
-                FileHeader = er.ReadObject<FileHeader>();
-                BlockType = er.ReadString(4);
-                BlockSize = er.ReadInt32();
-                Padding = er.ReadBytes(32);
-                NumInstruments = er.ReadInt32();
-                Instruments = new Instrument[NumInstruments];
-                for (int i = 0; i < NumInstruments; i++)
-                {
-                    Instruments[i] = er.ReadObject<Instrument>();
-                }
+                er.ReadIntoObject(this);
             }
         }
 
