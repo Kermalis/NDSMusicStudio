@@ -1,20 +1,23 @@
-﻿using Kermalis.NDSMusicStudio.Util;
+﻿using Kermalis.NDSMusicStudio.UI;
+using Kermalis.NDSMusicStudio.Util;
+using NAudio.CoreAudioApi;
+using NAudio.CoreAudioApi.Interfaces;
 using NAudio.Wave;
+using System;
 using System.Linq;
 
 namespace Kermalis.NDSMusicStudio.Core
 {
-    class SoundMixer
+    class SoundMixer : IAudioSessionEventsHandler
     {
         public static SoundMixer Instance { get; } = new SoundMixer();
-
-        public float MasterVolume;
 
         public readonly bool[] Mutes;
         public Channel[] Channels;
 
         readonly BufferedWaveProvider buffer;
         readonly IWavePlayer @out;
+        readonly AudioSessionControl appVolume;
 
         private SoundMixer()
         {
@@ -33,6 +36,18 @@ namespace Kermalis.NDSMusicStudio.Core
             };
             @out = new WasapiOut();
             @out.Init(buffer);
+            SessionCollection sessions = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia).AudioSessionManager.Sessions;
+            int id = System.Diagnostics.Process.GetCurrentProcess().Id;
+            for (int i = 0; i < sessions.Count; i++)
+            {
+                AudioSessionControl session = sessions[i];
+                if (session.GetProcessID == id)
+                {
+                    appVolume = session;
+                    appVolume.RegisterEventClient(this);
+                    break;
+                }
+            }
             @out.Play();
         }
 
@@ -137,11 +152,54 @@ namespace Kermalis.NDSMusicStudio.Core
                         }
                     }
                 }
-                left = (int)Utils.Clamp(left * MasterVolume, short.MinValue, short.MaxValue);
-                right = (int)Utils.Clamp(right * MasterVolume, short.MinValue, short.MaxValue);
+                left = Utils.Clamp(left, short.MinValue, short.MaxValue);
+                right = Utils.Clamp(right, short.MinValue, short.MaxValue);
                 // Convert two shorts to four bytes
                 buffer.AddSamples(new byte[] { (byte)(left & 0xFF), (byte)((left >> 8) & 0xFF), (byte)(right & 0xFF), (byte)((right >> 8) & 0xFF) }, 0, 4);
             }
+        }
+
+        bool ignoreVolChangeFromUI = false;
+        public void OnVolumeChanged(float volume, bool isMuted)
+        {
+            if (!ignoreVolChangeFromUI)
+            {
+                MainForm.Instance.SetVolumeBarValue(volume);
+            }
+            ignoreVolChangeFromUI = false;
+        }
+        public void OnDisplayNameChanged(string displayName)
+        {
+            throw new NotImplementedException();
+        }
+        public void OnIconPathChanged(string iconPath)
+        {
+            throw new NotImplementedException();
+        }
+        public void OnChannelVolumeChanged(uint channelCount, IntPtr newVolumes, uint channelIndex)
+        {
+            throw new NotImplementedException();
+        }
+        public void OnGroupingParamChanged(ref Guid groupingId)
+        {
+            throw new NotImplementedException();
+        }
+        // Fires on @out.Play() and @out.Stop()
+        public void OnStateChanged(AudioSessionState state)
+        {
+            if (state == AudioSessionState.AudioSessionStateActive)
+            {
+                OnVolumeChanged(appVolume.SimpleAudioVolume.Volume, appVolume.SimpleAudioVolume.Mute);
+            }
+        }
+        public void OnSessionDisconnected(AudioSessionDisconnectReason disconnectReason)
+        {
+            throw new NotImplementedException();
+        }
+        public void SetVolume(float volume)
+        {
+            ignoreVolChangeFromUI = true;
+            appVolume.SimpleAudioVolume.Volume = volume;
         }
     }
 }

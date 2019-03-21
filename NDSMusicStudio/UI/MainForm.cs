@@ -14,6 +14,8 @@ namespace Kermalis.NDSMusicStudio.UI
     [DesignerCategory("")]
     class MainForm : ThemedForm
     {
+        public static MainForm Instance { get; } = new MainForm();
+
         bool stopUI = false;
         readonly List<byte> pianoNotes = new List<byte>();
         public readonly bool[] PianoTracks = new bool[0x10];
@@ -46,7 +48,7 @@ namespace Kermalis.NDSMusicStudio.UI
             }
             base.Dispose(disposing);
         }
-        public MainForm()
+        private MainForm()
         {
             for (int i = 0; i < 0x10; i++)
             {
@@ -99,14 +101,14 @@ namespace Kermalis.NDSMusicStudio.UI
             int sX = iWidth - sWidth - 4;
             volumeBar = new ColorSlider
             {
+                Enabled = false,
                 LargeChange = 20,
                 Location = new Point(83, 45),
                 Maximum = 100,
                 Size = new Size(155, 27),
                 SmallChange = 5
             };
-            volumeBar.ValueChanged += (o, e) => SoundMixer.Instance.MasterVolume = volumeBar.Value / (float)volumeBar.Maximum;
-            volumeBar.Value = Config.Instance.Volume; // Update SoundMixer volume
+            volumeBar.ValueChanged += VolumeBar_ValueChanged;
 
             // Playlist box
             songsComboBox = new ComboBox
@@ -153,6 +155,17 @@ namespace Kermalis.NDSMusicStudio.UI
         }
 
         SDAT sdat;
+
+        void VolumeBar_ValueChanged(object sender, EventArgs e)
+        {
+            SoundMixer.Instance.SetVolume(volumeBar.Value / (float)volumeBar.Maximum);
+        }
+        public void SetVolumeBarValue(float volume)
+        {
+            volumeBar.ValueChanged -= VolumeBar_ValueChanged;
+            volumeBar.Value = (int)(volume * volumeBar.Maximum);
+            volumeBar.ValueChanged += VolumeBar_ValueChanged;
+        }
 
         string GetLabelForSong(int index)
         {
@@ -251,7 +264,7 @@ namespace Kermalis.NDSMusicStudio.UI
                 SongsComboBox_SelectedIndexChanged(null, null); // Why doesn't it work on its own??
                 LoadSong();
                 songNumerical.Maximum = sdat.INFOBlock.SequenceInfos.NumEntries - 1;
-                songsComboBox.Enabled = songNumerical.Enabled = playButton.Enabled = true;
+                songsComboBox.Enabled = songNumerical.Enabled = playButton.Enabled = volumeBar.Enabled = true;
             }
             catch (Exception ex)
             {

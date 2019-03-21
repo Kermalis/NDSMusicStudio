@@ -13,7 +13,6 @@ namespace Kermalis.NDSMusicStudio.Core
         public byte RefreshRate { get; private set; }
         public bool CenterIndicators { get; private set; }
         public bool PanpotIndicators { get; private set; }
-        public byte Volume { get; private set; }
         public HSLColor[] Colors { get; private set; }
 
         private Config()
@@ -30,7 +29,6 @@ namespace Kermalis.NDSMusicStudio.Core
             RefreshRate = (byte)Utils.ParseValue(mapping.Children["RefreshRate"].ToString());
             CenterIndicators = bool.Parse(mapping.Children["CenterIndicators"].ToString());
             PanpotIndicators = bool.Parse(mapping.Children["PanpotIndicators"].ToString());
-            Volume = (byte)Utils.ParseValue(mapping.Children["Volume"].ToString());
 
             var cmap = (YamlMappingNode)mapping.Children["Colors"];
             Colors = new HSLColor[256];

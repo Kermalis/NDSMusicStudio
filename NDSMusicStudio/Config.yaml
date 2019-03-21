@@ -1,10 +1,4 @@
-﻿# These cannot be refreshed in the program:
-
-Volume: 50 # 0 to 100.
-
-# These can be refreshed in the program:
-
-TaskbarProgress: True # True or False.
+﻿TaskbarProgress: True # True or False.
 RefreshRate: 30 # Value over 0. # Requires a song state change to update.
 CenterIndicators: False # True or False.
 PanpotIndicators: False # True or False.

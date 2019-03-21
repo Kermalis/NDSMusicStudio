@@ -10,7 +10,7 @@ namespace Kermalis.NDSMusicStudio
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new UI.MainForm());
+            Application.Run(UI.MainForm.Instance);
 
             // Bad coding that I have to include the following line, but I legitimately don't know why a system thread was remaining alive
             Environment.Exit(0);
