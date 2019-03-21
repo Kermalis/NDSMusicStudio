@@ -91,6 +91,7 @@ namespace Kermalis.NDSMusicStudio.Core
                 Owner.Channels.Remove(this);
             }
             Owner = null;
+            Volume = 0;
         }
 
         public int SweepMain()
@@ -175,126 +176,121 @@ namespace Kermalis.NDSMusicStudio.Core
                 // prevLeft and prevRight are stored because numSamples can be 0.
                 for (int i = 0; i < numSamples; i++)
                 {
-                    GetSample(out prevLeft, out prevRight);
+                    short samp = 0;
+                    switch (Type)
+                    {
+                        case InstrumentType.PCM:
+                            {
+                                switch (wave.Format)
+                                {
+                                    case SWAVFormat.PCM8:
+                                        {
+                                            // If hit end
+                                            if (dataOffset >= wave.Samples.Length)
+                                            {
+                                                if (wave.DoesLoop)
+                                                {
+                                                    dataOffset = wave.LoopOffset * 4;
+                                                }
+                                                else
+                                                {
+                                                    left = right = prevLeft = prevRight = 0;
+                                                    Stop();
+                                                    return;
+                                                }
+                                            }
+                                            samp = (short)((sbyte)wave.Samples[dataOffset++] << 8);
+                                            break;
+                                        }
+                                    case SWAVFormat.PCM16:
+                                        {
+                                            // If hit end
+                                            if (dataOffset >= wave.Samples.Length)
+                                            {
+                                                if (wave.DoesLoop)
+                                                {
+                                                    dataOffset = wave.LoopOffset * 4;
+                                                }
+                                                else
+                                                {
+                                                    left = right = prevLeft = prevRight = 0;
+                                                    Stop();
+                                                    return;
+                                                }
+                                            }
+                                            samp = (short)(wave.Samples[dataOffset++] | (wave.Samples[dataOffset++] << 8));
+                                            break;
+                                        }
+                                    case SWAVFormat.ADPCM:
+                                        {
+                                            // If just looped
+                                            if (adpcmDecoder.DataOffset == wave.LoopOffset * 4 && !adpcmDecoder.OnSecondNibble)
+                                            {
+                                                adpcmLoopLastSample = adpcmDecoder.LastSample;
+                                                adpcmLoopStepIndex = adpcmDecoder.StepIndex;
+                                            }
+                                            // If hit end
+                                            if (adpcmDecoder.DataOffset >= wave.Samples.Length && !adpcmDecoder.OnSecondNibble)
+                                            {
+                                                if (wave.DoesLoop)
+                                                {
+                                                    adpcmDecoder.DataOffset = wave.LoopOffset * 4;
+                                                    adpcmDecoder.StepIndex = adpcmLoopStepIndex;
+                                                    adpcmDecoder.LastSample = adpcmLoopLastSample;
+                                                    adpcmDecoder.OnSecondNibble = false;
+                                                }
+                                                else
+                                                {
+                                                    left = right = prevLeft = prevRight = 0;
+                                                    Stop();
+                                                    return;
+                                                }
+                                            }
+                                            samp = adpcmDecoder.GetSample();
+                                            break;
+                                        }
+                                }
+                                break;
+                            }
+                        case InstrumentType.PSG:
+                            {
+                                if (psgCounter <= psgDuty)
+                                {
+                                    samp = -0x7FFF;
+                                }
+                                else
+                                {
+                                    samp = 0x7FFF;
+                                }
+                                psgCounter++;
+                                if (psgCounter >= 8)
+                                {
+                                    psgCounter = 0;
+                                }
+                                break;
+                            }
+                        case InstrumentType.Noise:
+                            {
+                                if ((noiseCounter & 1) != 0)
+                                {
+                                    noiseCounter = (ushort)((noiseCounter >> 1) ^ 0x6000);
+                                    samp = -0x7FFF;
+                                }
+                                else
+                                {
+                                    noiseCounter = (ushort)(noiseCounter >> 1);
+                                    samp = 0x7FFF;
+                                }
+                                break;
+                            }
+                    }
+                    samp = (short)(samp * Volume / 0x7F);
+                    prevLeft = (short)(samp * (-Pan + 0x40) / 0x80);
+                    prevRight = (short)(samp * (Pan + 0x40) / 0x80);
                 }
                 left = prevLeft;
                 right = prevRight;
             }
-        }
-
-        void GetSample(out short left, out short right)
-        {
-            short samp = 0;
-            switch (Type)
-            {
-                case InstrumentType.PCM:
-                    {
-                        switch (wave.Format)
-                        {
-                            case SWAVFormat.PCM8:
-                                {
-                                    // If hit end
-                                    if (dataOffset >= wave.Samples.Length)
-                                    {
-                                        if (wave.DoesLoop)
-                                        {
-                                            dataOffset = wave.LoopOffset * 4;
-                                        }
-                                        else
-                                        {
-                                            left = right = 0;
-                                            Stop();
-                                            return;
-                                        }
-                                    }
-                                    samp = (short)((sbyte)wave.Samples[dataOffset++] << 8);
-                                    break;
-                                }
-                            case SWAVFormat.PCM16:
-                                {
-                                    // If hit end
-                                    if (dataOffset >= wave.Samples.Length)
-                                    {
-                                        if (wave.DoesLoop)
-                                        {
-                                            dataOffset = wave.LoopOffset * 4;
-                                        }
-                                        else
-                                        {
-                                            left = right = 0;
-                                            Stop();
-                                            return;
-                                        }
-                                    }
-                                    samp = (short)(wave.Samples[dataOffset++] | (wave.Samples[dataOffset++] << 8));
-                                    break;
-                                }
-                            case SWAVFormat.ADPCM:
-                                {
-                                    // If just looped
-                                    if (adpcmDecoder.DataOffset == wave.LoopOffset * 4 && !adpcmDecoder.OnSecondNibble)
-                                    {
-                                        adpcmLoopLastSample = adpcmDecoder.LastSample;
-                                        adpcmLoopStepIndex = adpcmDecoder.StepIndex;
-                                    }
-                                    // If hit end
-                                    if (adpcmDecoder.DataOffset >= wave.Samples.Length && !adpcmDecoder.OnSecondNibble)
-                                    {
-                                        if (wave.DoesLoop)
-                                        {
-                                            adpcmDecoder.DataOffset = wave.LoopOffset * 4;
-                                            adpcmDecoder.StepIndex = adpcmLoopStepIndex;
-                                            adpcmDecoder.LastSample = adpcmLoopLastSample;
-                                            adpcmDecoder.OnSecondNibble = false;
-                                        }
-                                        else
-                                        {
-                                            left = right = 0;
-                                            Stop();
-                                            return;
-                                        }
-                                    }
-                                    samp = adpcmDecoder.GetSample();
-                                    break;
-                                }
-                        }
-                        break;
-                    }
-                case InstrumentType.PSG:
-                    {
-                        if (psgCounter <= psgDuty)
-                        {
-                            samp = -0x7FFF;
-                        }
-                        else
-                        {
-                            samp = 0x7FFF;
-                        }
-                        psgCounter++;
-                        if (psgCounter >= 8)
-                        {
-                            psgCounter = 0;
-                        }
-                        break;
-                    }
-                case InstrumentType.Noise:
-                    {
-                        if ((noiseCounter & 1) != 0)
-                        {
-                            noiseCounter = (ushort)((noiseCounter >> 1) ^ 0x6000);
-                            samp = -0x7FFF;
-                        }
-                        else
-                        {
-                            noiseCounter = (ushort)(noiseCounter >> 1);
-                            samp = 0x7FFF;
-                        }
-                        break;
-                    }
-            }
-            samp = (short)(samp * Volume / 0x7F);
-            left = (short)(samp * (-Pan + 0x40) / 0x80);
-            right = (short)(samp * (Pan + 0x40) / 0x80);
         }
     }
 }

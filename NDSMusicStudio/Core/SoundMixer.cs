@@ -4,7 +4,6 @@ using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
 using NAudio.Wave;
 using System;
-using System.Linq;
 
 namespace Kermalis.NDSMusicStudio.Core
 {
@@ -56,52 +55,45 @@ namespace Kermalis.NDSMusicStudio.Core
             ushort allowedChannels;
             switch (type)
             {
-                case InstrumentType.PCM: allowedChannels = 0b1111111111111111; break; // All channels
+                case InstrumentType.PCM: allowedChannels = 0b1111111111111111; break; // All channels (0-15)
                 case InstrumentType.PSG: allowedChannels = 0b0011111100000000; break; // Only 8 9 10 11 12 13
                 case InstrumentType.Noise: allowedChannels = 0b1100000000000000; break; // Only 14 15
                 default: return null;
             }
-            Channel nChn = null;
-            IOrderedEnumerable<Channel> byOwner = Channels.Where(c => (allowedChannels & (1 << c.Index)) != 0).OrderByDescending(c => c.Owner == null ? 0xFF : c.Owner.Index);
-            foreach (Channel i in byOwner) // Find free
+            int GetScore(Channel c)
             {
-                if (i.Owner == null)
-                {
-                    nChn = i;
-                    break;
-                }
+                // Free channels should be used before releasing channels which should be used before track priority
+                return c.Owner == null ? -2 : c.State == EnvelopeState.Release ? -1 : c.Owner.Priority;
             }
-            if (nChn == null) // Find releasing
+            Channel nChan = null;
+            for (int i = 0; i < 0x10; i++)
             {
-                foreach (Channel i in byOwner)
+                if ((allowedChannels & (1 << i)) != 0)
                 {
-                    if (i.State == EnvelopeState.Release)
+                    Channel c = Channels[i];
+                    if (nChan != null)
                     {
-                        nChn = i;
-                        break;
+                        int nScore = GetScore(nChan);
+                        int cScore = GetScore(c);
+                        if (cScore <= nScore && (cScore < nScore || c.Volume <= nChan.Volume))
+                        {
+                            nChan = c;
+                        }
+                    }
+                    else
+                    {
+                        nChan = c;
                     }
                 }
             }
-            if (nChn == null) // Find prioritized
+            if (nChan != null && track.Priority >= GetScore(nChan))
             {
-                foreach (Channel i in byOwner)
-                {
-                    if (track.Priority > i.Owner.Priority)
-                    {
-                        nChn = i;
-                        break;
-                    }
-                }
+                return nChan;
             }
-            if (nChn == null) // None available
+            else
             {
-                Channel lowest = byOwner.First(); // Kill lowest track's instrument if the track is lower than this one
-                if (lowest.Owner.Index >= track.Index)
-                {
-                    nChn = lowest;
-                }
+                return null;
             }
-            return nChn;
         }
 
         public void ChannelTick()
@@ -118,15 +110,15 @@ namespace Kermalis.NDSMusicStudio.Core
                     }
                     int vol = Utils.SustainTable[chan.NoteVelocity] + chan.Velocity + chan.Owner.GetVolume();
                     int pitch = ((chan.Key - chan.BaseKey) << 6) + chan.SweepMain() + chan.Owner.GetPitch(); // "<< 6" is "* 0x40"
-                    if (chan.State != EnvelopeState.Release || vol > -92544)
+                    if (chan.State == EnvelopeState.Release && vol <= -92544)
+                    {
+                        chan.Stop();
+                    }
+                    else
                     {
                         chan.Volume = Utils.GetChannelVolume(vol);
                         chan.Pan = (sbyte)Utils.Clamp(chan.StartingPan + chan.Owner.GetPan(), -0x40, 0x3F);
                         chan.Timer = Utils.GetChannelTimer(chan.BaseTimer, pitch);
-                    }
-                    else // EnvelopeState.Dying
-                    {
-                        chan.Stop();
                     }
                 }
             }
@@ -143,7 +135,7 @@ namespace Kermalis.NDSMusicStudio.Core
                     Channel chan = Channels[j];
                     if (chan.Owner != null)
                     {
-                        bool muted = Mutes[chan.Owner.Index];
+                        bool muted = Mutes[chan.Owner.Index]; // Get mute first because chan.Process() can call chan.Stop() which sets chan.Owner to null
                         chan.Process(out short channelLeft, out short channelRight);
                         if (!muted)
                         {
