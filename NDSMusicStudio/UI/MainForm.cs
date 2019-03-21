@@ -1,6 +1,8 @@
 ﻿using Kermalis.NDSMusicStudio.Core;
 using Kermalis.NDSMusicStudio.Core.FileSystem;
+using Kermalis.NDSMusicStudio.Properties;
 using Kermalis.NDSMusicStudio.Util;
+using Microsoft.WindowsAPICodePack.Taskbar;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -37,6 +39,8 @@ namespace Kermalis.NDSMusicStudio.UI
         ColorSlider volumeBar;
         TrackInfoControl trackInfo;
         ComboBox songsComboBox;
+
+        ThumbnailToolBarButton prevTButton, toggleTButton, nextTButton;
 
         #endregion
 
@@ -152,6 +156,19 @@ namespace Kermalis.NDSMusicStudio.UI
             SongPlayer.Instance.SongEnded += SongEnded;
             Resize += OnResize;
             Text = "NDS Music Studio";
+
+            // Taskbar Buttons
+            if (TaskbarManager.IsPlatformSupported)
+            {
+                prevTButton = new ThumbnailToolBarButton(Resources.IconPrevious, "Previous Song");
+                prevTButton.Click += (o, e) => PlayPreviousSong();
+                toggleTButton = new ThumbnailToolBarButton(Resources.IconPlay, "Play");
+                toggleTButton.Click += (o, e) => TogglePlayback();
+                nextTButton = new ThumbnailToolBarButton(Resources.IconNext, "Next Song");
+                nextTButton.Click += (o, e) => PlayNextSong();
+                prevTButton.Enabled = toggleTButton.Enabled = nextTButton.Enabled = false;
+                TaskbarManager.Instance.ThumbnailToolBars.AddButtons(Handle, prevTButton, toggleTButton, nextTButton);
+            }
         }
 
         SDAT sdat;
@@ -265,6 +282,7 @@ namespace Kermalis.NDSMusicStudio.UI
                 LoadSong();
                 songNumerical.Maximum = sdat.INFOBlock.SequenceInfos.NumEntries - 1;
                 songsComboBox.Enabled = songNumerical.Enabled = playButton.Enabled = volumeBar.Enabled = true;
+                UpdateTaskbarButtons();
             }
             catch (Exception ex)
             {
@@ -283,6 +301,7 @@ namespace Kermalis.NDSMusicStudio.UI
             pauseButton.Text = "Pause";
             timer.Interval = (int)(1000f / Config.Instance.RefreshRate);
             timer.Start();
+            UpdateTaskbarButtons();
         }
         void Pause()
         {
@@ -301,6 +320,7 @@ namespace Kermalis.NDSMusicStudio.UI
                 System.Threading.Monitor.Enter(timer);
                 ClearPianoNotes();
             }
+            UpdateTaskbarButtons();
         }
         void Stop()
         {
@@ -310,6 +330,34 @@ namespace Kermalis.NDSMusicStudio.UI
             System.Threading.Monitor.Enter(timer);
             ClearPianoNotes();
             trackInfo.DeleteData();
+            UpdateTaskbarButtons();
+        }
+        void TogglePlayback()
+        {
+            if (SongPlayer.Instance.State == PlayerState.Stopped)
+            {
+                Play();
+            }
+            else if (SongPlayer.Instance.State == PlayerState.Paused || SongPlayer.Instance.State == PlayerState.Playing)
+            {
+                Pause();
+            }
+        }
+        void PlayPreviousSong()
+        {
+            if (songNumerical.Value > 0)
+            {
+                songNumerical.Value--;
+                Play();
+            }
+        }
+        void PlayNextSong()
+        {
+            if (songNumerical.Value < songNumerical.Maximum)
+            {
+                songNumerical.Value++;
+                Play();
+            }
         }
 
         void ClearPianoNotes()
@@ -370,6 +418,22 @@ namespace Kermalis.NDSMusicStudio.UI
             finally
             {
                 System.Threading.Monitor.Exit(timer);
+            }
+        }
+
+        void UpdateTaskbarButtons()
+        {
+            if (TaskbarManager.IsPlatformSupported)
+            {
+                prevTButton.Enabled = songNumerical.Value > 0;
+                nextTButton.Enabled = songNumerical.Value < songNumerical.Maximum;
+                switch (SongPlayer.Instance.State)
+                {
+                    case PlayerState.Stopped: toggleTButton.Icon = Resources.IconPlay; toggleTButton.Tooltip = "Play"; break;
+                    case PlayerState.Playing: toggleTButton.Icon = Resources.IconPause; toggleTButton.Tooltip = "Pause"; break;
+                    case PlayerState.Paused: toggleTButton.Icon = Resources.IconPlay; toggleTButton.Tooltip = "Unpause"; break;
+                }
+                toggleTButton.Enabled = true;
             }
         }
 

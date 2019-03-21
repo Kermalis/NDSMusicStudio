@@ -280,7 +280,6 @@ namespace Kermalis.NDSMusicStudio.UI
                 Controls.Add(panel1);
                 Controls.Add(button1);
                 DataBindings.Add(new Binding("Text", FlexibleMessageBoxFormBindingSource, "CaptionText", true));
-                //Icon = GBAMusicStudio.Properties.Resources.Icon;
                 MaximizeBox = false;
                 MinimizeBox = false;
                 MinimumSize = new Size(276, 140);

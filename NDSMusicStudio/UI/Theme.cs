@@ -1,4 +1,5 @@
-﻿using Kermalis.NDSMusicStudio.Util;
+﻿using Kermalis.NDSMusicStudio.Properties;
+using Kermalis.NDSMusicStudio.Util;
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -66,7 +67,7 @@ namespace Kermalis.NDSMusicStudio.UI
         public ThemedForm() : base()
         {
             BackColor = Theme.BackColor;
-            //Icon = Resources.Icon;
+            Icon = Resources.Icon;
         }
     }
     class ThemedPanel : Panel
