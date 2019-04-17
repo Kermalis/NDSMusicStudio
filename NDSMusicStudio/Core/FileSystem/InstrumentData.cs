@@ -7,17 +7,17 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
         public class DataParam
         {
             [BinaryArrayFixedLength(2)]
-            public ushort[] Info;
-            public byte BaseKey;
-            public byte Attack;
-            public byte Decay;
-            public byte Sustain;
-            public byte Release;
-            public byte Pan;
+            public ushort[] Info { get; set; }
+            public byte BaseKey { get; set; }
+            public byte Attack { get; set; }
+            public byte Decay { get; set; }
+            public byte Sustain { get; set; }
+            public byte Release { get; set; }
+            public byte Pan { get; set; }
         }
 
-        public InstrumentType Type;
-        public byte Padding;
-        public DataParam Param;
+        public InstrumentType Type { get; set; }
+        public byte Padding { get; set; }
+        public DataParam Param { get; set; }
     }
 }

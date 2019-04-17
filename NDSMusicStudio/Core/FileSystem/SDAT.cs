@@ -97,27 +97,30 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
 
             public class SequenceInfo
             {
-                public ushort FileId;
-                public ushort Padding1;
-                public ushort Bank;
-                public byte Volume;
-                public byte ChannelPriority;
-                public byte PlayerPriority;
-                public byte PlayerNum;
+                public ushort FileId { get; set; }
                 [BinaryArrayFixedLength(2)]
-                public byte[] Padding2;
+                public byte[] Unknown1 { get; set; }
+                public ushort Bank { get; set; }
+                public byte Volume { get; set; }
+                public byte ChannelPriority { get; set; }
+                public byte PlayerPriority { get; set; }
+                public byte PlayerNum { get; set; }
+                [BinaryArrayFixedLength(2)]
+                public byte[] Unknown2 { get; set; }
             }
             public class BankInfo
             {
-                public ushort FileId;
-                public ushort Padding;
+                public ushort FileId { get; set; }
+                [BinaryArrayFixedLength(2)]
+                public byte[] Unknown { get; set; }
                 [BinaryArrayFixedLength(4)]
-                public ushort[] SWARs;
+                public ushort[] SWARs { get; set; }
             }
             public class WaveArchiveInfo
             {
-                public ushort FileId;
-                public ushort Padding;
+                public ushort FileId { get; set; }
+                [BinaryArrayFixedLength(2)]
+                public byte[] Unknown { get; set; }
             }
 
             public string BlockType; // "INFO"
@@ -181,11 +184,11 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
             }
 
             [BinaryStringFixedLength(4)]
-            public string BlockType; // "FAT "
-            public int BlockSize;
-            public int NumEntries;
+            public string BlockType { get; set; } // "FAT "
+            public int BlockSize { get; set; }
+            public int NumEntries { get; set; }
             [BinaryArrayVariableLength(nameof(NumEntries))]
-            public FATEntry[] Entries;
+            public FATEntry[] Entries { get; set; }
         }
 
         public FileHeader FileHeader; // "SDAT"
@@ -206,8 +209,7 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
 
         public SDAT(byte[] bytes)
         {
-            using (var s = new MemoryStream(bytes))
-            using (var er = new EndianBinaryReader(s))
+            using (var er = new EndianBinaryReader(new MemoryStream(bytes)))
             {
                 FileHeader = er.ReadObject<FileHeader>();
                 SYMBOffset = er.ReadInt32();

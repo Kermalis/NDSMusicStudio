@@ -10,7 +10,7 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
         {
             public class DefaultData
             {
-                public InstrumentData.DataParam Param;
+                public InstrumentData.DataParam Param { get; set; }
             }
             public class DrumSetData : IBinarySerializable
             {
@@ -92,23 +92,22 @@ namespace Kermalis.NDSMusicStudio.Core.FileSystem
             }
         }
 
-        public FileHeader FileHeader; // "SBNK"
+        public FileHeader FileHeader { get; set; } // "SBNK"
         [BinaryStringFixedLength(4)]
-        public string BlockType; // "DATA"
-        public int BlockSize;
+        public string BlockType { get; set; } // "DATA"
+        public int BlockSize { get; set; }
         [BinaryArrayFixedLength(32)]
-        public byte[] Padding;
-        public int NumInstruments;
+        public byte[] Padding { get; set; }
+        public int NumInstruments { get; set; }
         [BinaryArrayVariableLength(nameof(NumInstruments))]
-        public Instrument[] Instruments;
+        public Instrument[] Instruments { get; set; }
 
         [BinaryIgnore]
-        public SWAR[] SWARs = new SWAR[4];
+        public SWAR[] SWARs { get; } = new SWAR[4];
 
         public SBNK(byte[] bytes)
         {
-            using (var s = new MemoryStream(bytes))
-            using (var er = new EndianBinaryReader(s))
+            using (var er = new EndianBinaryReader(new MemoryStream(bytes)))
             {
                 er.ReadIntoObject(this);
             }
